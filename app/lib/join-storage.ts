@@ -10,12 +10,14 @@ import {
 import {
   KinesisVideoWebRTCStorageClient,
   JoinStorageSessionCommand,
+  JoinStorageSessionAsViewerCommand,
   JoinStorageSessionInput,
-  KinesisVideoWebRTCStorageClientConfig
+  KinesisVideoWebRTCStorageClientConfig,
+  JoinStorageSessionAsViewerInput
 } from "@aws-sdk/client-kinesis-video-webrtc-storage";
 
-export async function joinStorage() {
-  const { channelARN, webRTCEndpoint } = await getWebRTCEndpointAndChannelARN()
+export async function joinStorage(role: string, clientId: string = '') {
+  const { channelARN, webRTCEndpoint } = await getWebRTCEndpointAndChannelARN(role)
 
   const kinesisVideoWebRTCStorageClientConfig = {
     region: process.env.AWS_REGION,
@@ -27,21 +29,33 @@ export async function joinStorage() {
   } as KinesisVideoWebRTCStorageClientConfig
 
   const kinesisVideoWebRTCStorageClient = new KinesisVideoWebRTCStorageClient(kinesisVideoWebRTCStorageClientConfig);
-  const joinStorageSessionInput = { // JoinStorageSessionInput
-    channelArn: channelARN
-  } as JoinStorageSessionInput
-
-  const joinStorageSessionCommand = new JoinStorageSessionCommand(joinStorageSessionInput);
-
+  
   try {
-    await kinesisVideoWebRTCStorageClient.send(joinStorageSessionCommand)
+    if (role === "MASTER") {
+      const joinStorageSessionInput = {
+        channelArn: channelARN,
+      } as JoinStorageSessionInput
+
+      const joinStorageSessionCommand = new JoinStorageSessionCommand(joinStorageSessionInput);
+      await kinesisVideoWebRTCStorageClient.send(joinStorageSessionCommand);
+    } else {
+      const joinStorageSessionInput = {
+        channelArn: channelARN,
+        clientId
+      } as JoinStorageSessionAsViewerInput
+
+      console.log(joinStorageSessionInput)
+      const joinStorageSessionCommand = new JoinStorageSessionAsViewerCommand(joinStorageSessionInput);
+      const viewerClient = new KinesisVideoWebRTCStorageClient(kinesisVideoWebRTCStorageClientConfig);
+      await viewerClient.send(joinStorageSessionCommand);
+    }
   } catch (err) {
     console.error("Error joining storage session: ", err);
     throw new Error("Error joining storage session")
   }
 }
 
-async function getWebRTCEndpointAndChannelARN() {
+async function getWebRTCEndpointAndChannelARN(role: string) {
   const kinesisVideoClientConfig = {
     region: process.env.AWS_REGION,
     credentials: {
@@ -60,7 +74,7 @@ async function getWebRTCEndpointAndChannelARN() {
       Protocols: [ // ListOfProtocols
         "WEBRTC",
       ],
-      Role: "MASTER",
+      Role: role,
     },
   } as GetSignalingChannelEndpointCommandInput;
 
