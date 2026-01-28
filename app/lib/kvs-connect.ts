@@ -12,7 +12,7 @@ export async function kvsConnect(role:string) {
     const { channelARN, endpoints } = await getEndpointsAndChannelARN(role);
     const iceServers = await getIceServers(channelARN, endpoints);
 
-    return { iceServers, channelARN, endpoints }
+    return { iceServers: iceServers as RTCIceServer[], channelARN, endpoints }
   } catch (error) {
     console.error("[ERROR kvs-connect]: ", error)
     throw new Error("kvs-connect problem")

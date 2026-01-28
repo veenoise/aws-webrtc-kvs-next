@@ -106,7 +106,7 @@ const page = () => {
         };
 
         const localStream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { width: { ideal: 720 }, height: { ideal: 480 } },
           audio: true,
         });
 
@@ -202,7 +202,7 @@ const page = () => {
 
   async function callJoinStorageSessionUntilSDPOfferReceived() {
     while (!sdpOfferReceivedRef.current) {
-      await joinStorage()
+      await joinStorage("MASTER")
       await new Promise(resolve => setTimeout(resolve, 6000))
     }
 
