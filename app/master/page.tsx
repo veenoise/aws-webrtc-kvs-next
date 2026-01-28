@@ -64,6 +64,8 @@ const page = () => {
         const pc = new RTCPeerConnection({ iceServers: iceServers as RTCIceServer[], iceTransportPolicy: 'all' });
         pcRef.current = pc;
 
+        await pc.setRemoteDescription(offer)
+
         signalingClient.on('iceCandidate', async (candidate, remoteClientIdIce) => {
           if (remoteClientIdIce !== remoteClientId) {
             return;
@@ -115,8 +117,6 @@ const page = () => {
           }
           setStatus('Local video previewed');
         }
-
-        await pc.setRemoteDescription(offer)
 
         const [videoCodecs, audioCodecs] = getCodecFilters();
         pc.getTransceivers().map(async (transceiver) => {
